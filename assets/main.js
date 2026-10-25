@@ -125,4 +125,234 @@
   document.querySelectorAll('[data-year]').forEach(function (el) {
     el.textContent = String(new Date().getFullYear());
   });
+
+  /* ---------- 7. 后端接口 ---------- */
+  var API = { status: '/api/status', messages: '/api/messages' };
+
+  var statusList = document.querySelector('[data-status-list]');
+  var statusRaw = document.querySelector('[data-status-raw]');
+  var refreshBtn = document.querySelector('[data-status-refresh]');
+
+  var guestForm = document.querySelector('[data-guest-form]');
+  var guestList = document.querySelector('[data-guest-list]');
+  var guestHint = document.querySelector('[data-form-hint]');
+  var guestSubmit = document.querySelector('[data-guest-submit]');
+  var kvTag = document.querySelector('[data-kv-tag]');
+  var kvReady = false;
+
+  function field(name) {
+    return document.querySelector('[data-field="' + name + '"]');
+  }
+
+  function setField(name, text, state) {
+    var el = field(name);
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove('is-ok', 'is-bad', 'is-pending');
+    if (state) el.classList.add(state);
+  }
+
+  function setHint(text, state) {
+    if (!guestHint) return;
+    guestHint.textContent = text;
+    guestHint.className = 'form-hint' + (state ? ' ' + state : '');
+  }
+
+  function timeUTC(iso) {
+    var date = new Date(iso);
+    if (isNaN(date.getTime())) return '—';
+    return date.toISOString().slice(11, 19) + ' UTC';
+  }
+
+  function ago(ts) {
+    if (!ts) return '';
+    var diff = Date.now() - ts;
+    if (diff < 6e4) return '刚刚';
+    if (diff < 36e5) return Math.floor(diff / 6e4) + ' 分钟前';
+    if (diff < 864e5) return Math.floor(diff / 36e5) + ' 小时前';
+    var d = new Date(ts);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function loadStatus() {
+    if (!statusList) return;
+    setField('state', '检测中…', 'is-pending');
+
+    var started = performance.now();
+    fetch(API.status, { cache: 'no-store', headers: { accept: 'application/json' } })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var ms = Math.round(performance.now() - started);
+        var edge = data.edge || {};
+
+        setField('state', '在线', 'is-ok');
+        setField('runtime', data.runtime || 'EdgeOne Pages Functions');
+        setField('edge', edge.colo || edge.region || '未知');
+        setField(
+          'geo',
+          [edge.city, edge.region, edge.country].filter(Boolean).join(' · ') || '未知'
+        );
+        setField('time', timeUTC(data.server && data.server.time));
+        setField('latency', ms + ' ms');
+
+        if (statusRaw) statusRaw.textContent = JSON.stringify(data, null, 2);
+      })
+      .catch(function () {
+        setField('state', '函数未运行', 'is-bad');
+        ['runtime', 'edge', 'geo', 'time', 'latency'].forEach(function (key) {
+          setField(key, '—');
+        });
+        if (statusRaw) {
+          statusRaw.textContent = '没有拿到 JSON。当前可能是纯静态预览：\n运行 npm run dev，或部署到 EdgeOne Pages 后再访问。';
+        }
+        setKvState(false, '接口不可用：本地纯静态预览不会执行 functions。运行 npm run dev 试试。');
+      });
+  }
+
+  function setKvState(ready, message) {
+    kvReady = ready;
+    if (kvTag) {
+      kvTag.textContent = ready ? 'KV 已连接' : 'KV 未绑定';
+      kvTag.className = 'tag ' + (ready ? 'is-ok' : 'is-warn');
+    }
+    if (guestSubmit) {
+      guestSubmit.disabled = !ready;
+      guestSubmit.textContent = '发送';
+    }
+    var textarea = guestForm && guestForm.querySelector('textarea');
+    var input = guestForm && guestForm.querySelector('input[name="name"]');
+    if (textarea) textarea.disabled = !ready;
+    if (input) input.disabled = !ready;
+
+    if (message) setHint(message, ready ? 'is-ok' : 'is-bad');
+    else setHint(ready ? '写入会落到 Pages KV，刷新后依然在。' : '');
+  }
+
+  function renderEmpty() {
+    if (!guestList) return;
+    guestList.innerHTML = '';
+    var li = document.createElement('li');
+    li.className = 'guest-empty';
+    li.textContent = '还没有留言，来做第一个。';
+    guestList.appendChild(li);
+  }
+
+  function renderMessages(items) {
+    if (!guestList) return;
+    guestList.innerHTML = '';
+
+    if (!items || !items.length) {
+      renderEmpty();
+      return;
+    }
+
+    items.forEach(function (item) {
+      var li = document.createElement('li');
+
+      var head = document.createElement('div');
+      head.className = 'guest-item-head';
+
+      var name = document.createElement('span');
+      name.className = 'guest-name';
+      name.textContent = item.name || '匿名';
+
+      var time = document.createElement('time');
+      time.textContent = ago(item.at);
+
+      var text = document.createElement('p');
+      text.className = 'guest-text';
+      text.textContent = item.content;
+
+      head.appendChild(name);
+      head.appendChild(time);
+      li.appendChild(head);
+      li.appendChild(text);
+      guestList.appendChild(li);
+    });
+  }
+
+  function loadMessages() {
+    if (!guestList) return;
+
+    fetch(API.messages, { cache: 'no-store', headers: { accept: 'application/json' } })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.kv) setKvState(true);
+        else setKvState(false, data.hint || 'KV 尚未绑定，留言功能暂不可用。');
+        renderMessages(data.messages);
+      })
+      .catch(function () {
+        setKvState(false, '接口不可用：本地纯静态预览不会执行 functions。运行 npm run dev 试试。');
+      });
+  }
+
+  if (guestForm) {
+    guestForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!kvReady) return;
+
+      var data = new FormData(guestForm);
+      var content = String(data.get('content') || '').trim();
+      var name = String(data.get('name') || '').trim();
+      var textarea = guestForm.querySelector('textarea');
+
+      if (!content) {
+        setHint('写点内容再发送。', 'is-bad');
+        if (textarea) textarea.focus();
+        return;
+      }
+
+      if (guestSubmit) {
+        guestSubmit.disabled = true;
+        guestSubmit.textContent = '发送中…';
+      }
+
+      fetch(API.messages, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: name, content: content }),
+      })
+        .then(function (res) {
+          return res.json().then(function (body) {
+            return { ok: res.ok, body: body };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok || !result.body || !result.body.ok) {
+            throw new Error((result.body && result.body.message) || '发送失败');
+          }
+          guestForm.reset();
+          setHint('已写入 KV，刷新页面也还在。', 'is-ok');
+          toast('留言已保存');
+          loadMessages();
+        })
+        .catch(function (err) {
+          setHint(err.message || '发送失败，请稍后再试。', 'is-bad');
+        })
+        .finally(function () {
+          if (guestSubmit) {
+            guestSubmit.disabled = !kvReady;
+            guestSubmit.textContent = '发送';
+          }
+        });
+    });
+  }
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function () {
+      loadStatus();
+      loadMessages();
+    });
+  }
+
+  if (statusList || guestList) {
+    loadStatus();
+    loadMessages();
+  }
 })();

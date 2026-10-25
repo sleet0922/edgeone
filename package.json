@@ -2,7 +2,7 @@
   "name": "edgeone-demo",
   "version": "1.0.0",
   "private": true,
-  "description": "EdgeOne Pages 部署演示站点：零依赖静态页面 + 一个复制文件的构建脚本",
+  "description": "EdgeOne Pages 演示：静态页面 + Pages Functions（/api/status、/api/messages）+ KV 留言",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",

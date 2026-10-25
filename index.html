@@ -38,6 +38,7 @@
     <nav class="nav" aria-label="页面导航">
       <a href="#pipeline">流程</a>
       <a href="#config">部署配置</a>
+      <a href="#backend">后端</a>
       <a href="#checklist">上线检查</a>
     </nav>
 
@@ -63,8 +64,9 @@
       </h1>
 
       <p class="lede">
-        这是一个可以直接部署的静态站点示例。代码推送到 <code>main</code> 之后，
-        EdgeOne Pages 会拉取仓库、执行构建、把产物发布到边缘节点 —— 全程不需要手动上传。
+        这是一个「静态页面 + 两个 Pages Functions」的全栈示例：<code>/api/status</code> 返回边缘节点信息，
+        <code>/api/messages</code> 用 KV 存留言。推送到 <code>main</code> 之后，页面和函数一起自动部署，
+        不需要服务器，也不需要手动上传。
       </p>
 
       <div class="hero-actions">
@@ -80,8 +82,8 @@
 
       <ul class="hero-meta">
         <li><strong>0</strong> 个第三方依赖</li>
+        <li><strong>2</strong> 个边缘函数</li>
         <li><strong>4</strong> 个产物文件</li>
-        <li><strong>1</strong> 条命令完成构建</li>
       </ul>
     </div>
 
@@ -99,6 +101,7 @@
         <li><span class="log-step">npm install</span><span class="log-ok">0 依赖</span></li>
         <li><span class="log-step">npm run build</span><span class="log-ok">dist/</span></li>
         <li><span class="log-step">上传静态资源</span><span class="log-ok">4 个文件</span></li>
+        <li><span class="log-step">注册函数</span><span class="log-ok">/api × 2</span></li>
         <li class="log-done"><span class="log-step">部署完成</span><span class="log-ok">全球可用区</span></li>
       </ol>
 
@@ -168,10 +171,74 @@
     </div>
   </section>
 
+  <!-- 后端 -->
+  <section class="wrap section" id="backend" aria-labelledby="backend-title">
+    <div class="section-head reveal">
+      <p class="kicker">03 / 现在有后端了</p>
+      <h2 id="backend-title">页面在边缘，逻辑也在边缘</h2>
+      <p class="section-sub">
+        <code>functions/</code> 会按目录自动生成路由：<code>functions/api/status.js</code> 对应 <code>/api/status</code>。
+        不用买服务器、不用配反向代理，也不用改一行控制台配置。
+      </p>
+    </div>
+
+    <div class="backend-grid">
+      <!-- 状态接口 -->
+      <article class="panel-card reveal">
+        <header class="card-head">
+          <span class="live-dot" aria-hidden="true"></span>
+          <h3><span class="method">GET</span> /api/status</h3>
+          <button class="btn-icon" type="button" data-status-refresh>重新检测</button>
+        </header>
+
+        <dl class="status-list" data-status-list>
+          <div><dt>状态</dt><dd data-field="state" class="is-pending">检测中…</dd></div>
+          <div><dt>运行时</dt><dd data-field="runtime">—</dd></div>
+          <div><dt>边缘节点</dt><dd data-field="edge">—</dd></div>
+          <div><dt>你的位置</dt><dd data-field="geo">—</dd></div>
+          <div><dt>服务器时间</dt><dd data-field="time">—</dd></div>
+          <div><dt>往返耗时</dt><dd data-field="latency">—</dd></div>
+        </dl>
+
+        <details class="raw">
+          <summary>查看原始 JSON</summary>
+          <pre data-status-raw>—</pre>
+        </details>
+      </article>
+
+      <!-- 留言板 -->
+      <article class="panel-card reveal">
+        <header class="card-head">
+          <span class="live-dot" aria-hidden="true"></span>
+          <h3><span class="method method-post">POST</span> /api/messages</h3>
+          <span class="tag" data-kv-tag>KV 检测中</span>
+        </header>
+
+        <form class="guest-form" data-guest-form novalidate>
+          <div class="guest-row">
+            <input type="text" name="name" maxlength="16" placeholder="昵称（可选）" autocomplete="nickname" aria-label="昵称" />
+            <button class="btn btn-primary btn-sm" type="submit" data-guest-submit>发送</button>
+          </div>
+          <textarea name="content" rows="3" maxlength="140" placeholder="写点什么，会存进 Pages KV…" aria-label="留言内容"></textarea>
+          <p class="form-hint" data-form-hint role="status" aria-live="polite">正在检测 KV 绑定…</p>
+        </form>
+
+        <ul class="guest-list" data-guest-list aria-live="polite">
+          <li class="guest-empty">还没有留言，来做第一个。</li>
+        </ul>
+      </article>
+    </div>
+
+    <p class="backend-note reveal">
+      KV 是可选绑定：没有它，<code>/api/status</code> 照常工作，留言板会提示你去绑定。
+      绑定时的变量名请填 <code>GUESTBOOK_KV</code>，代码按这个名字取值。
+    </p>
+  </section>
+
   <!-- 检查清单 -->
   <section class="wrap section" id="checklist" aria-labelledby="checklist-title">
     <div class="section-head reveal">
-      <p class="kicker">03 / 上线之后</p>
+      <p class="kicker">04 / 上线之后</p>
       <h2 id="checklist-title">三件事确认部署成功</h2>
     </div>
 
@@ -195,7 +262,7 @@
   <section class="wrap section cta reveal" aria-labelledby="cta-title">
     <div class="cta-inner">
       <h2 id="cta-title">这个页面本身就是产物</h2>
-      <p>它没有框架、没有打包器，只有 HTML、CSS 和一点原生 JS —— 用来验证「push → build → 上线」这条链路是否通畅。</p>
+      <p>它没有框架、没有打包器，只有 HTML、CSS、原生 JS 和一小组 Pages Functions —— 用来验证「push → build → 上线」这条链路是否通畅。</p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="https://github.com/sleet0922/edgeone" target="_blank" rel="noopener">在 GitHub 打开仓库</a>
         <a class="btn btn-ghost" href="https://edgeone.ai/document/162227908259442688" target="_blank" rel="noopener">EdgeOne Pages 文档</a>
