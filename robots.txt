@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# 构建产物目录，无需收录
+Disallow: /dist/

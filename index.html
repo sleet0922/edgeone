@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EdgeOne Pages 部署演示 · 一次 push，站点上线</title>
+<meta name="description" content="一个零构建依赖的静态站点示例，用来验证 EdgeOne Pages 的 Git 自动部署流程。" />
+<meta name="theme-color" content="#070a10" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b1220'/%3E%3Cpath d='M16 6l8 4.5v11L16 26l-8-4.5v-11L16 6z' fill='none' stroke='%235b9cff' stroke-width='2'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="./assets/style.css" />
+<script>
+  // 交错显现依赖 JS：若主脚本未加载成功，2 秒后自动降级为全部可见
+  document.documentElement.classList.add('js');
+  setTimeout(function () {
+    if (!window.__demoReady) document.documentElement.classList.remove('js');
+  }, 2000);
+</script>
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+
+<div class="aurora" aria-hidden="true">
+  <span class="aurora-a"></span>
+  <span class="aurora-b"></span>
+  <span class="aurora-c"></span>
+</div>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="#top" aria-label="EdgeOne 部署演示，回到顶部">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 4.5 27 10.8v10.4L16 27.5 5 21.2V10.8L16 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M16 10.6l5.6 3.2v6.4L16 23.4l-5.6-3.2v-6.4L16 10.6Z" fill="currentColor" opacity=".85"/>
+      </svg>
+      <span class="brand-text">EdgeOne<span class="brand-sub">/ demo</span></span>
+    </a>
+
+    <nav class="nav" aria-label="页面导航">
+      <a href="#pipeline">流程</a>
+      <a href="#config">部署配置</a>
+      <a href="#checklist">上线检查</a>
+    </nav>
+
+    <a class="btn btn-ghost btn-sm" href="https://github.com/sleet0922/edgeone" target="_blank" rel="noopener">
+      GitHub
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="ico"><path d="M6 3h7v7M13 3 4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+  <!-- Hero -->
+  <section class="hero wrap" id="top">
+    <div class="hero-copy">
+      <p class="eyebrow">
+        <span class="pulse" aria-hidden="true"></span>
+        静态站点 · 零构建依赖 · 已连接 GitHub
+      </p>
+
+      <h1>
+        把一次 <span class="grad">git push</span><br />
+        变成一次上线
+      </h1>
+
+      <p class="lede">
+        这是一个可以直接部署的静态站点示例。代码推送到 <code>main</code> 之后，
+        EdgeOne Pages 会拉取仓库、执行构建、把产物发布到边缘节点 —— 全程不需要手动上传。
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#config">
+          查看填表参数
+          <svg viewBox="0 0 16 16" class="ico" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <button class="btn btn-ghost" type="button" data-copy="git clone git@github.com:sleet0922/edgeone.git">
+          <svg viewBox="0 0 16 16" class="ico" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5H3.5a1 1 0 0 0-1 1v7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          克隆命令
+        </button>
+      </div>
+
+      <ul class="hero-meta">
+        <li><strong>0</strong> 个第三方依赖</li>
+        <li><strong>4</strong> 个产物文件</li>
+        <li><strong>1</strong> 条命令完成构建</li>
+      </ul>
+    </div>
+
+    <!-- 终端卡片 -->
+    <div class="hero-panel reveal">
+      <div class="panel-head">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="panel-title">deploy.log</span>
+        <span class="panel-badge">main</span>
+      </div>
+
+      <ol class="log" aria-label="部署日志">
+        <li><span class="log-cmd">$ git push origin main</span></li>
+        <li><span class="log-note">检测到生产分支 main</span></li>
+        <li><span class="log-step">npm install</span><span class="log-ok">0 依赖</span></li>
+        <li><span class="log-step">npm run build</span><span class="log-ok">dist/</span></li>
+        <li><span class="log-step">上传静态资源</span><span class="log-ok">4 个文件</span></li>
+        <li class="log-done"><span class="log-step">部署完成</span><span class="log-ok">全球可用区</span></li>
+      </ol>
+
+      <div class="panel-foot">
+        <span class="stat"><span class="stat-k">构建</span><span class="stat-v">node scripts/build.mjs</span></span>
+        <span class="stat"><span class="stat-k">产物</span><span class="stat-v">dist/</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 特性 -->
+  <section class="wrap section" id="pipeline" aria-labelledby="pipeline-title">
+    <div class="section-head reveal">
+      <p class="kicker">01 / 它做了什么</p>
+      <h2 id="pipeline-title">三步走完一次发布</h2>
+    </div>
+
+    <div class="cards">
+      <article class="card reveal">
+        <span class="card-num">01</span>
+        <h3>推送即触发</h3>
+        <p>每次提交到生产分支，平台自动拉取最新代码，不用打包、不用手动上传压缩包。</p>
+      </article>
+      <article class="card reveal">
+        <span class="card-num">02</span>
+        <h3>构建产物可预期</h3>
+        <p>构建脚本只做一件事：把静态文件复制进 <code>dist/</code>。没有插件、没有隐式依赖，失败率接近零。</p>
+      </article>
+      <article class="card reveal">
+        <span class="card-num">03</span>
+        <h3>全球边缘分发</h3>
+        <p>产物发布到全球可用区（含中国大陆）的节点，访问就近命中，首屏更快。</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- 配置 -->
+  <section class="wrap section" id="config" aria-labelledby="config-title">
+    <div class="section-head reveal">
+      <p class="kicker">02 / 控制台怎么填</p>
+      <h2 id="config-title">创建项目时的参数</h2>
+      <p class="section-sub">下面的值与本仓库一一对应，照着填就能一次构建成功。</p>
+    </div>
+
+    <div class="config reveal">
+      <table>
+        <caption class="sr-only">EdgeOne Pages 创建项目时的字段与取值</caption>
+        <thead>
+          <tr><th scope="col">字段</th><th scope="col">填写内容</th><th scope="col">说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">项目名称</th><td><code>edgeone</code></td><td>随意，只影响控制台显示</td></tr>
+          <tr><th scope="row">加速区域</th><td>全球可用区（含中国大陆）</td><td>绑定自定义域名需 ICP 备案；只服务境外可选「境外可用区」</td></tr>
+          <tr><th scope="row">生产分支</th><td><code>main</code></td><td>与本仓库默认分支一致</td></tr>
+          <tr><th scope="row">框架预设</th><td><code>Other</code></td><td>纯静态站点，不需要框架预设</td></tr>
+          <tr><th scope="row">根目录</th><td><code>/</code></td><td>项目就在仓库根目录</td></tr>
+          <tr class="is-key"><th scope="row">输出目录</th><td><code>dist</code></td><td>构建脚本把文件复制到这里</td></tr>
+          <tr class="is-key"><th scope="row">构建命令</th><td><code>npm run build</code></td><td>执行 <code>node scripts/build.mjs</code></td></tr>
+          <tr class="is-key"><th scope="row">安装命令</th><td><code>npm install</code></td><td>无第三方依赖，几秒完成</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="copybar reveal">
+      <code class="copybar-code">npm install &amp;&amp; npm run build</code>
+      <button class="btn btn-ghost btn-sm" type="button" data-copy="npm install &amp;&amp; npm run build">复制</button>
+    </div>
+  </section>
+
+  <!-- 检查清单 -->
+  <section class="wrap section" id="checklist" aria-labelledby="checklist-title">
+    <div class="section-head reveal">
+      <p class="kicker">03 / 上线之后</p>
+      <h2 id="checklist-title">三件事确认部署成功</h2>
+    </div>
+
+    <ul class="checks">
+      <li class="reveal">
+        <span class="check-ico" aria-hidden="true">✓</span>
+        <div><h3>打开平台分配的域名</h3><p>能看到这一页，说明静态资源已经分发到边缘节点。</p></div>
+      </li>
+      <li class="reveal">
+        <span class="check-ico" aria-hidden="true">✓</span>
+        <div><h3>确认版本是最新提交</h3><p>页面底部会显示仓库与分支，和 GitHub 上最后一次提交对得上。</p></div>
+      </li>
+      <li class="reveal">
+        <span class="check-ico" aria-hidden="true">✓</span>
+        <div><h3>推一个空提交再验证</h3><p><code>git commit --allow-empty -m "chore: 触发部署"</code>，控制台应自动出现新构建。</p></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- CTA -->
+  <section class="wrap section cta reveal" aria-labelledby="cta-title">
+    <div class="cta-inner">
+      <h2 id="cta-title">这个页面本身就是产物</h2>
+      <p>它没有框架、没有打包器，只有 HTML、CSS 和一点原生 JS —— 用来验证「push → build → 上线」这条链路是否通畅。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/sleet0922/edgeone" target="_blank" rel="noopener">在 GitHub 打开仓库</a>
+        <a class="btn btn-ghost" href="https://edgeone.ai/document/162227908259442688" target="_blank" rel="noopener">EdgeOne Pages 文档</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p>© <span data-year>2026</span> sleet0922 · 为腾讯云 EdgeOne Pages 准备的静态站点</p>
+    <p class="footer-meta"><code>sleet0922/edgeone</code> <span aria-hidden="true">·</span> <code>main</code></p>
+  </div>
+</footer>
+
+<div class="toast" data-toast role="status" aria-live="polite"></div>
+
+<script src="./assets/main.js" defer></script>
+</body>
+</html>
